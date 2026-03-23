@@ -1,9 +1,10 @@
 <script setup lang="ts">
+import Sidebar from '../components/Sidebar.vue';
 </script>
 
 <template>
   <div class="main-layout">
-    <aside class="sidebar">Sidebar</aside>
+    <Sidebar />
     <main class="content">Content</main>
   </div>
 </template>
@@ -12,10 +13,6 @@
 .main-layout {
   display: flex;
   height: 100vh;
-}
-.sidebar {
-  width: 250px;
-  background: #16162a;
 }
 .content {
   flex: 1;
