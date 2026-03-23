@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { NForm, NFormItem, NInput, NSwitch, NSelect, NButton, NCard } from 'naive-ui';
 
 const settings = ref({
@@ -27,6 +27,10 @@ const handleLoadSettings = () => {
     settings.value = JSON.parse(saved);
   }
 };
+
+onMounted(() => {
+  handleLoadSettings();
+});
 </script>
 
 <template>

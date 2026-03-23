@@ -65,7 +65,7 @@ const handleFileDoubleClick = (file: any) => {
       </table>
       
       <div v-if="sftpStore.isLoading" class="loading">
-        <n-progress type="loading" />
+        <n-progress type="line" />
       </div>
     </div>
     
