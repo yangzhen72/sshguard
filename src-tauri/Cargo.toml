@@ -1,0 +1,32 @@
+[package]
+name = "sshguard"
+version = "0.1.0"
+description = "SSH Connection Manager for Windows"
+authors = ["you"]
+license = "MIT"
+repository = ""
+edition = "2021"
+
+[lib]
+name = "sshguard_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["devtools"] }
+tauri-plugin-shell = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+rusqlite = { version = "0.31", features = ["bundled"] }
+age = "0.9"
+tokio = { version = "1", features = ["full"] }
+ssh2 = "0.9"
+uuid = { version = "1", features = ["v4"] }
+thiserror = "1"
+log = "0.4"
+env_logger = "0.11"
+directories = "5"
+lazy_static = "1.4"
+parking_lot = "0.12"
