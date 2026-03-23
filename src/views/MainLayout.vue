@@ -1,11 +1,16 @@
 <script setup lang="ts">
 import Sidebar from '../components/Sidebar.vue';
+import TabBar from '../components/TabBar.vue';
+import TerminalPanel from '../components/TerminalPanel.vue';
 </script>
 
 <template>
   <div class="main-layout">
     <Sidebar />
-    <main class="content">Content</main>
+    <div class="terminal-area">
+      <TabBar />
+      <TerminalPanel />
+    </div>
   </div>
 </template>
 
@@ -14,8 +19,11 @@ import Sidebar from '../components/Sidebar.vue';
   display: flex;
   height: 100vh;
 }
-.content {
+
+.terminal-area {
   flex: 1;
-  background: #1a1a2e;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 </style>
