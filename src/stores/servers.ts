@@ -57,7 +57,7 @@ export const useServersStore = defineStore('servers', () => {
       createdAt: Date.now(),
       updatedAt: Date.now()
     };
-    await invoke('add_server', { config });
+    await invoke('add_server', { server: config });
     servers.value.push(config);
   };
 
