@@ -10,8 +10,7 @@ pub fn connect(host: String, port: u16, username: String, password: String) -> R
 #[command]
 pub fn create_pty(session_id: String) -> Result<String, String> {
     ssh::create_pty(&session_id)
-        .map_err(|e| e.to_string())?;
-    Ok(session_id)
+        .map_err(|e| e.to_string())
 }
 
 #[command]

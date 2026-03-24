@@ -1,7 +1,8 @@
-use ssh2::Sftp;
+use ssh2::{Sftp, File};
 use std::collections::HashMap;
 use parking_lot::RwLock;
 use std::path::Path;
+use std::io::{Read, Write};
 
 lazy_static::lazy_static! {
     pub static ref SFTP_MANAGER: RwLock<SftpManager> = RwLock::new(SftpManager::new());
@@ -50,16 +51,26 @@ pub fn list_directory(sftp: &Sftp, path: &str) -> Result<Vec<String>> {
     let dir = sftp.opendir(Path::new(path))
         .map_err(|e| SftpError::SshError(e))?;
     
-    for entry in dir.readdir().map_err(|e| SftpError::SshError(e))? {
-        let (filename, _stat) = entry.map_err(|e| SftpError::SshError(e))?;
-        entries.push(filename.to_string());
+    loop {
+        match dir.readdir() {
+            Ok(Some((filename, _stat))) => {
+                entries.push(filename.to_string());
+            }
+            Ok(None) => break,
+            Err(e) => {
+                if e.code() == ssh2::ErrorCode::SFTP(1) {
+                    break;
+                }
+                return Err(SftpError::SshError(e));
+            }
+        }
     }
     
     Ok(entries)
 }
 
 pub fn download_file(sftp: &Sftp, remote_path: &str, local_path: &str) -> Result<()> {
-    let mut remote_file = sftp.open(Path::new(remote_path))
+    let mut remote_file: File = sftp.open(Path::new(remote_path))
         .map_err(|e| SftpError::SshError(e))?;
     
     let mut contents = Vec::new();
@@ -73,7 +84,7 @@ pub fn download_file(sftp: &Sftp, remote_path: &str, local_path: &str) -> Result
 pub fn upload_file(sftp: &Sftp, local_path: &str, remote_path: &str) -> Result<()> {
     let contents = std::fs::read(local_path).map_err(|e| SftpError::IoError(e))?;
     
-    let mut remote_file = sftp.create(Path::new(remote_path))
+    let mut remote_file: File = sftp.create(Path::new(remote_path))
         .map_err(|e| SftpError::SshError(e))?;
     
     remote_file.write_all(&contents).map_err(|e| SftpError::IoError(e))?;
