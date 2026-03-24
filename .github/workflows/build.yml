@@ -11,15 +11,8 @@ permissions:
 
 jobs:
   build:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - platform: 'windows-latest'
-            args: ''
-
-    runs-on: ${{ matrix.platform }}
-
+    runs-on: windows-latest
+    
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -39,77 +32,25 @@ jobs:
         run: npm ci
 
       - name: Build Tauri app
-        uses: tauri-apps/tauri-action@v0
+        run: npm run tauri build -- --target x86_64-pc-windows-msvc
+        env:
+          CI: true
+
+      - name: Find installers
+        id: find
+        shell: bash
+        run: |
+          echo "MSI_PATH=$(find src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi -name '*.msi' | head -1)" >> $GITHUB_OUTPUT
+          echo "EXE_PATH=$(find src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis -name '*.exe' | head -1)" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v1
+        with:
+          draft: false
+          prerelease: false
+          files: |
+            ${{ steps.find.outputs.MSI_PATH }}
+            ${{ steps.find.outputs.EXE_PATH }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tagName: v__VERSION__
-          releaseName: 'SSHGuard v__VERSION__'
-          releaseBody: 'See the assets to download and install this version.'
-          releaseDraft: true
-          prerelease: false
-          args: --target x86_64-pc-windows-msvc
-
-  build-msi:
-    runs-on: windows-latest
-    
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Install Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: x86_64-pc-windows-msvc
-
-      - name: Install frontend dependencies
-        run: npm ci
-
-      - name: Build MSI
-        run: npm run tauri build -- --target x86_64-pc-windows-msvc
-        env:
-          CI: true
-
-      - name: Upload MSI artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: msi-installer
-          path: src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/*.msi
-
-  build-exe:
-    runs-on: windows-latest
-    
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Install Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: x86_64-pc-windows-msvc
-
-      - name: Install frontend dependencies
-        run: npm ci
-
-      - name: Build NSIS
-        run: npm run tauri build -- --target x86_64-pc-windows-msvc
-        env:
-          CI: true
-
-      - name: Upload EXE artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: exe-installer
-          path: src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/*.exe

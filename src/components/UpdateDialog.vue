@@ -15,37 +15,46 @@ const formatReleaseNotes = (notes: string | null): string => {
       <div class="modal-header">
         <div class="header-title">
           <span class="icon">🎉</span>
-          <span>新版本可用</span>
+          <span>发现新版本</span>
         </div>
         <button class="close-btn" @click="updateStore.closeDialog">✕</button>
       </div>
       
       <div class="modal-body">
         <div class="version-info">
-          <span class="version current">v{{ updateStore.updateInfo?.current_version }}</span>
+          <span class="version-badge current">v{{ updateStore.updateInfo?.current_version }}</span>
           <span class="arrow">→</span>
-          <span class="version latest">v{{ updateStore.updateInfo?.latest_version }}</span>
+          <span class="version-badge latest">v{{ updateStore.updateInfo?.latest_version }}</span>
         </div>
         
         <div class="release-notes-section">
           <div class="section-label">更新内容</div>
           <pre class="release-notes">{{ formatReleaseNotes(updateStore.updateInfo?.release_notes || null) }}</pre>
         </div>
+        
+        <div v-if="updateStore.error" class="status-message error">
+          {{ updateStore.error }}
+        </div>
+        
+        <div v-if="updateStore.downloadMessage" class="status-message success">
+          {{ updateStore.downloadMessage }}
+        </div>
       </div>
       
       <div class="modal-footer">
-        <button class="btn" @click="updateStore.dismissUpdate">
+        <button 
+          class="btn" 
+          @click="updateStore.dismissUpdate"
+          :disabled="updateStore.isDownloading"
+        >
           忽略此版本
-        </button>
-        <button class="btn" @click="updateStore.closeDialog">
-          稍后提醒
         </button>
         <button 
           class="btn primary" 
+          @click="updateStore.downloadAndInstall"
           :disabled="updateStore.isDownloading"
-          @click="updateStore.downloadUpdate"
         >
-          {{ updateStore.isDownloading ? '下载中...' : '立即下载' }}
+          {{ updateStore.isDownloading ? '下载安装中...' : '下载并安装' }}
         </button>
       </div>
     </div>
@@ -126,25 +135,25 @@ const formatReleaseNotes = (notes: string | null): string => {
 .version-info {
   display: flex;
   align-items: center;
-  gap: var(--spacing-md);
   justify-content: center;
+  gap: var(--spacing-md);
   font-size: 16px;
 }
 
-.version {
+.version-badge {
   padding: var(--spacing-xs) var(--spacing-sm);
   border-radius: var(--radius-sm);
+  font-weight: 600;
 }
 
-.version.current {
+.version-badge.current {
   background: var(--bg-tertiary);
   color: var(--text-secondary);
 }
 
-.version.latest {
+.version-badge.latest {
   background: rgba(0, 152, 255, 0.2);
   color: var(--accent-primary);
-  font-weight: 600;
 }
 
 .arrow {
@@ -179,6 +188,25 @@ const formatReleaseNotes = (notes: string | null): string => {
   line-height: 1.5;
 }
 
+.status-message {
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  text-align: center;
+}
+
+.status-message.error {
+  background: rgba(244, 67, 54, 0.2);
+  color: var(--error);
+  border: 1px solid var(--error);
+}
+
+.status-message.success {
+  background: rgba(76, 175, 80, 0.2);
+  color: var(--success);
+  border: 1px solid var(--success);
+}
+
 .modal-footer {
   display: flex;
   justify-content: flex-end;
@@ -198,7 +226,7 @@ const formatReleaseNotes = (notes: string | null): string => {
   transition: all 0.15s ease;
 }
 
-.btn:hover {
+.btn:hover:not(:disabled) {
   background: var(--bg-hover);
 }
 
@@ -208,7 +236,7 @@ const formatReleaseNotes = (notes: string | null): string => {
   color: #fff;
 }
 
-.btn.primary:hover {
+.btn.primary:hover:not(:disabled) {
   background: var(--accent-hover);
 }
 

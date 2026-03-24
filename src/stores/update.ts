@@ -15,6 +15,7 @@ export const useUpdateStore = defineStore('update', {
     isChecking: false,
     isDownloading: false,
     downloadProgress: 0,
+    downloadMessage: '',
     showDialog: false,
     error: null as string | null,
   }),
@@ -48,19 +49,28 @@ export const useUpdateStore = defineStore('update', {
       }
     },
     
-    async downloadUpdate() {
-      if (!this.updateInfo?.download_url) return;
+    async downloadAndInstall() {
+      if (!this.updateInfo?.download_url) {
+        this.error = 'No download URL available';
+        return;
+      }
       
       this.isDownloading = true;
       this.downloadProgress = 0;
+      this.downloadMessage = '正在下载更新...';
+      this.error = null;
       
       try {
-        window.open(this.updateInfo.download_url, '_blank');
+        const result = await invoke<string>('download_and_install', {
+          url: this.updateInfo.download_url
+        });
+        this.downloadMessage = result;
         this.isDownloading = false;
-        this.showDialog = false;
-      } catch (e) {
+        // App will restart or close after installation
+      } catch (e: any) {
         this.error = String(e);
         this.isDownloading = false;
+        this.downloadMessage = '';
       }
     }
   }
