@@ -24,7 +24,10 @@ const handleSelectionChange = (keys: string[]) => {
 
 const handleBatchConnect = () => {
   selectedServers.value.forEach(id => {
-    serversStore.connect(id);
+    const server = serversStore.servers.find(s => s.id === id);
+    if (server) {
+      terminalsStore.createTab(server);
+    }
   });
 };
 

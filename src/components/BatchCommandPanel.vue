@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import { NInput, NButton, NCheckbox, NCollapse, NCollapseItem, NSpace, NBadge, NTag } from 'naive-ui';
+import { NInput, NButton, NTag } from 'naive-ui';
 import { useServersStore } from '../stores/servers';
 import { useTerminalsStore } from '../stores/terminals';
 
