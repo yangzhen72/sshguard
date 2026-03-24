@@ -48,7 +48,7 @@ pub type Result<T> = std::result::Result<T, SftpError>;
 
 pub fn list_directory(sftp: &Sftp, path: &str) -> Result<Vec<String>> {
     let mut entries = Vec::new();
-    let dir = sftp.opendir(Path::new(path))
+    let mut dir = sftp.opendir(Path::new(path))
         .map_err(|e| SftpError::SshError(e))?;
     
     loop {
