@@ -51,7 +51,7 @@ const initTerminal = (tabId: string) => {
         }
         invoke('send_pty_data', { sessionId: tab.sessionId, data: new TextEncoder().encode(inputBuffer + '\n') });
         inputBuffer = '';
-      } else if (data === '\u7f') {
+      } else if (data === '\u007f') {
         if (inputBuffer.length > 0) {
           inputBuffer = inputBuffer.slice(0, -1);
           term.write('\b \b');
