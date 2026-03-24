@@ -2,9 +2,11 @@
 import { ref } from 'vue';
 import { useServersStore } from '../stores/servers';
 
-const props = defineProps<{
+withDefaults(defineProps<{
   show: boolean;
-}>();
+}>(), {
+  show: false,
+});
 
 const emit = defineEmits(['close', 'update:show']);
 
