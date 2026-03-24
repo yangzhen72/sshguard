@@ -1,12 +1,11 @@
 <script setup lang="ts">
 import { ref } from 'vue';
+import { invoke } from '@tauri-apps/api/core';
 import { useServersStore } from '../stores/servers';
 
-withDefaults(defineProps<{
+const props = defineProps<{
   show: boolean;
-}>(), {
-  show: false,
-});
+}>();
 
 const emit = defineEmits(['close', 'update:show']);
 
@@ -24,21 +23,93 @@ const formData = ref({
   tags: [] as string[]
 });
 
+const isTesting = ref(false);
+const testResult = ref<{ success: boolean; message: string } | null>(null);
+
 const authOptions = [
   { label: '密码', value: 'password' },
   { label: '私钥文件', value: 'keyfile' },
   { label: 'SSH Agent', value: 'agent' }
 ];
 
+const handleTestConnection = async () => {
+  if (!formData.value.host || !formData.value.username) {
+    testResult.value = { success: false, message: '请填写主机地址和用户名' };
+    return;
+  }
+
+  isTesting.value = true;
+  testResult.value = null;
+
+  try {
+    let sessionId: number;
+    
+    if (formData.value.authType === 'password') {
+      sessionId = await invoke<number>('connect', {
+        host: formData.value.host,
+        port: formData.value.port,
+        username: formData.value.username,
+        authType: formData.value.authType,
+        password: formData.value.password,
+        keyFile: null
+      });
+    } else if (formData.value.authType === 'keyfile') {
+      sessionId = await invoke<number>('connect', {
+        host: formData.value.host,
+        port: formData.value.port,
+        username: formData.value.username,
+        authType: formData.value.authType,
+        password: null,
+        keyFile: formData.value.keyFilePath
+      });
+    } else {
+      sessionId = await invoke<number>('connect', {
+        host: formData.value.host,
+        port: formData.value.port,
+        username: formData.value.username,
+        authType: formData.value.authType,
+        password: null,
+        keyFile: null
+      });
+    }
+
+    await invoke('disconnect', { sessionId });
+    testResult.value = { success: true, message: '连接成功！' };
+  } catch (e: any) {
+    testResult.value = { 
+      success: false, 
+      message: e.toString() || '连接失败，请检查参数是否正确' 
+    };
+  } finally {
+    isTesting.value = false;
+  }
+};
+
 const handleSubmit = async () => {
-  await serversStore.addServer(formData.value);
-  handleClose();
+  try {
+    await serversStore.addServer({
+      name: formData.value.name,
+      group: formData.value.group,
+      host: formData.value.host,
+      port: formData.value.port,
+      username: formData.value.username,
+      authType: formData.value.authType,
+      encryptedPassword: formData.value.password || undefined,
+      keyFilePath: formData.value.keyFilePath || undefined,
+      tags: formData.value.tags
+    });
+    handleClose();
+  } catch (e: any) {
+    testResult.value = { 
+      success: false, 
+      message: '保存失败: ' + (e.toString() || '未知错误') 
+    };
+  }
 };
 
 const handleClose = () => {
   emit('update:show', false);
   emit('close');
-  // Reset form
   formData.value = {
     name: '',
     group: 'Default',
@@ -50,6 +121,7 @@ const handleClose = () => {
     keyFilePath: '',
     tags: []
   };
+  testResult.value = null;
 };
 </script>
 
@@ -142,10 +214,22 @@ const handleClose = () => {
             class="form-input"
           />
         </div>
+        
+        <!-- 测试结果 -->
+        <div v-if="testResult" class="test-result" :class="{ success: testResult.success, error: !testResult.success }">
+          {{ testResult.message }}
+        </div>
       </div>
       
       <div class="modal-footer">
         <button class="btn" @click="handleClose">取消</button>
+        <button 
+          class="btn test-btn" 
+          :disabled="isTesting"
+          @click="handleTestConnection"
+        >
+          {{ isTesting ? '测试中...' : '测试连接' }}
+        </button>
         <button class="btn primary" @click="handleSubmit">保存</button>
       </div>
     </div>
@@ -267,6 +351,25 @@ const handleClose = () => {
   cursor: pointer;
 }
 
+.test-result {
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  text-align: center;
+}
+
+.test-result.success {
+  background: rgba(76, 175, 80, 0.2);
+  color: var(--success);
+  border: 1px solid var(--success);
+}
+
+.test-result.error {
+  background: rgba(244, 67, 54, 0.2);
+  color: var(--error);
+  border: 1px solid var(--error);
+}
+
 .modal-footer {
   display: flex;
   justify-content: flex-end;
@@ -298,5 +401,19 @@ const handleClose = () => {
 
 .btn.primary:hover {
   background: var(--accent-hover);
+}
+
+.btn.test-btn {
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+}
+
+.btn.test-btn:hover:not(:disabled) {
+  background: rgba(0, 152, 255, 0.1);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 </style>
