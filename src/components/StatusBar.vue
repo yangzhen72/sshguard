@@ -29,7 +29,7 @@ const connectedCount = computed(() => terminalsStore.tabs.length);
     
     <div class="status-right">
       <span class="status-item">UTF-8</span>
-      <span class="status-item">v0.3.0</span>
+      <span class="status-item">v0.4.0</span>
     </div>
   </footer>
 </template>

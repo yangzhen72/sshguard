@@ -1,6 +1,6 @@
 [package]
 name = "sshguard"
-version = "0.3.0"
+version = "0.4.0"
 description = "SSH Connection Manager for Windows"
 authors = ["you"]
 license = "MIT"

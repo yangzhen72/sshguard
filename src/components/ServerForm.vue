@@ -3,7 +3,7 @@ import { ref } from 'vue';
 import { invoke } from '@tauri-apps/api/core';
 import { useServersStore } from '../stores/servers';
 
-const props = defineProps<{
+defineProps<{
   show: boolean;
 }>();
 
