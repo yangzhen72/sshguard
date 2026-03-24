@@ -1,0 +1,198 @@
+@import './variables.css';
+
+/* 全局样式 */
+.cyberpunk-app {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+/* 霓虹边框效果 */
+.neon-border {
+  border: 1px solid var(--border-default);
+  transition: all 0.3s ease;
+}
+
+.neon-border:hover {
+  border-color: var(--neon-cyan);
+  box-shadow: var(--glow-cyan);
+}
+
+/* 按钮样式 */
+.cyberpunk-button {
+  background: var(--gradient-button);
+  border: none;
+  border-radius: 4px;
+  color: #000;
+  font-weight: bold;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cyberpunk-button:hover {
+  transform: scale(1.02);
+  box-shadow: var(--glow-cyan);
+}
+
+.cyberpunk-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* 输入框样式 */
+.cyberpunk-input {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-default);
+  color: var(--text-primary);
+  padding: 8px 12px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.cyberpunk-input:focus {
+  outline: none;
+  border-color: var(--neon-cyan);
+  box-shadow: var(--glow-cyan);
+}
+
+.cyberpunk-input::placeholder {
+  color: var(--text-secondary);
+}
+
+/* 终端面板 */
+.cyberpunk-terminal {
+  background: var(--terminal-bg);
+  border: 1px solid var(--neon-cyan);
+  box-shadow: var(--glow-cyan);
+}
+
+/* 侧边栏 */
+.cyberpunk-sidebar {
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border-default);
+}
+
+/* 服务器列表项 */
+.server-item {
+  padding: 8px 12px;
+  border-left: 3px solid transparent;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.server-item:hover {
+  border-left-color: var(--neon-cyan);
+  background: rgba(0, 255, 255, 0.1);
+}
+
+.server-item.selected {
+  background: rgba(0, 255, 255, 0.2);
+  border-left-color: var(--neon-cyan);
+}
+
+/* 扫描线效果 */
+.scanline {
+  position: relative;
+}
+
+.scanline::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 255, 255, 0.03) 2px,
+    rgba(0, 255, 255, 0.03) 4px
+  );
+  pointer-events: none;
+}
+
+/* 批量选中状态 */
+.server-item.batch-selected {
+  background: rgba(0, 255, 255, 0.15);
+  border-left: 3px solid var(--neon-cyan);
+}
+
+/* 标签页样式 */
+.cyberpunk-tab {
+  background: var(--bg-tertiary);
+  border-bottom: 2px solid var(--border-default);
+  transition: all 0.2s ease;
+}
+
+.cyberpunk-tab.active {
+  border-bottom-color: var(--neon-cyan);
+  background: rgba(0, 255, 255, 0.1);
+}
+
+.cyberpunk-tab:hover {
+  background: rgba(0, 255, 255, 0.05);
+}
+
+/* 面板分割线 */
+.cyberpunk-divider {
+  background: linear-gradient(
+    to right,
+    transparent,
+    var(--neon-cyan),
+    transparent
+  );
+  height: 1px;
+}
+
+/* 滚动条样式 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-default);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--neon-cyan);
+}
+
+/* 状态标签 */
+.cyberpunk-tag {
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.cyberpunk-tag.success {
+  background: rgba(0, 255, 136, 0.2);
+  color: var(--success);
+  border: 1px solid var(--success);
+}
+
+.cyberpunk-tag.error {
+  background: rgba(255, 51, 102, 0.2);
+  color: var(--error);
+  border: 1px solid var(--error);
+}
+
+.cyberpunk-tag.warning {
+  background: rgba(255, 170, 0, 0.2);
+  color: var(--warning);
+  border: 1px solid var(--warning);
+}
+
+.cyberpunk-tag.info {
+  background: rgba(0, 255, 255, 0.2);
+  color: var(--neon-cyan);
+  border: 1px solid var(--neon-cyan);
+}

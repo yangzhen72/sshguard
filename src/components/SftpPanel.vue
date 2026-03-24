@@ -1,6 +1,7 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import { useSftpStore } from '../stores/sftp';
-import { NButton, NProgress, NSpace } from 'naive-ui';
+import { NButton, NProgress, NSpace, NTag } from 'naive-ui';
 
 const sftpStore = useSftpStore();
 
@@ -23,26 +24,47 @@ const handleFileDoubleClick = (file: any) => {
     sftpStore.navigateTo(file.path);
   }
 };
+
+const syncStatusText = computed(() => {
+  switch (sftpStore.syncStatus) {
+    case 'synced': return '已同步';
+    case 'syncing': return '同步中...';
+    case 'error': return '同步失败';
+    default: return '--';
+  }
+});
+
+const syncStatusType = computed(() => {
+  switch (sftpStore.syncStatus) {
+    case 'synced': return 'success';
+    case 'syncing': return 'warning';
+    case 'error': return 'error';
+    default: return 'default';
+  }
+});
 </script>
 
 <template>
-  <div class="sftp-panel">
+  <div class="sftp-panel cyberpunk-terminal">
     <div class="sftp-toolbar">
       <n-space>
-        <n-button size="small" @click="sftpStore.navigateUp()">↑ Up</n-button>
-        <n-button size="small" @click="sftpStore.listDirectory(sftpStore.currentPath)">↻ Refresh</n-button>
+        <n-button size="small" @click="sftpStore.navigateUp()" class="neon-border">↑</n-button>
+        <n-button size="small" @click="sftpStore.listDirectory(sftpStore.currentPath)" class="neon-border">↻</n-button>
       </n-space>
       <span class="current-path">{{ sftpStore.currentPath }}</span>
+      <n-tag :type="syncStatusType" size="small" class="sync-tag">
+        {{ syncStatusText }}
+      </n-tag>
     </div>
     
     <div class="file-list">
       <table>
         <thead>
           <tr>
-            <th>Name</th>
-            <th>Size</th>
-            <th>Modified</th>
-            <th>Permissions</th>
+            <th>名称</th>
+            <th>大小</th>
+            <th>修改时间</th>
+            <th>权限</th>
           </tr>
         </thead>
         <tbody>
@@ -70,7 +92,7 @@ const handleFileDoubleClick = (file: any) => {
     </div>
     
     <div class="sftp-status">
-      <span>{{ sftpStore.files.length }} items</span>
+      <span>{{ sftpStore.files.length }} 个项目</span>
     </div>
   </div>
 </template>
@@ -79,27 +101,33 @@ const handleFileDoubleClick = (file: any) => {
 .sftp-panel {
   width: 350px;
   min-width: 250px;
-  background: #1e1e3f;
-  border-left: 1px solid #2a2a5e;
+  background: var(--bg-secondary);
+  border-left: 1px solid var(--border-default);
   display: flex;
   flex-direction: column;
 }
 
 .sftp-toolbar {
   padding: 8px;
-  border-bottom: 1px solid #2a2a5e;
+  border-bottom: 1px solid var(--border-default);
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 8px;
 }
 
 .current-path {
   font-size: 12px;
-  color: #888;
-  max-width: 150px;
+  color: var(--text-secondary);
+  max-width: 100px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  flex: 1;
+}
+
+.sync-tag {
+  font-size: 10px;
 }
 
 .file-list {
@@ -115,14 +143,15 @@ table {
 th, td {
   text-align: left;
   padding: 8px;
-  border-bottom: 1px solid #2a2a5e;
+  border-bottom: 1px solid var(--border-default);
 }
 
 th {
-  background: #16162a;
+  background: var(--bg-tertiary);
   font-weight: 500;
   position: sticky;
   top: 0;
+  color: var(--text-primary);
 }
 
 tr {
@@ -130,11 +159,11 @@ tr {
 }
 
 tr:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(0, 255, 255, 0.05);
 }
 
 tr.selected {
-  background: rgba(64, 158, 255, 0.2);
+  background: rgba(0, 255, 255, 0.15);
 }
 
 .file-icon {
@@ -143,9 +172,9 @@ tr.selected {
 
 .sftp-status {
   padding: 8px;
-  border-top: 1px solid #2a2a5e;
+  border-top: 1px solid var(--border-default);
   font-size: 12px;
-  color: #888;
+  color: var(--text-secondary);
 }
 
 .loading {

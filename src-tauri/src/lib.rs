@@ -29,6 +29,7 @@ pub fn run() {
             commands::sftp::list_directory,
             commands::sftp::download_file,
             commands::sftp::upload_file,
+            commands::update::check_for_updates,
         ])
         .setup(|app| {
             log::info!("Application setup complete");

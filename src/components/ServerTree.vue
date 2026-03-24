@@ -5,6 +5,12 @@ import { useServersStore } from '../stores/servers';
 
 const props = defineProps<{
   search: string;
+  selectedKeys?: string[];
+  multiple?: boolean;
+}>();
+
+const emit = defineEmits<{
+  (e: 'update:selected-keys', keys: string[]): void;
 }>();
 
 const serversStore = useServersStore();
@@ -32,12 +38,19 @@ const treeData = computed(() => {
   return Object.values(groups);
 });
 
+const internalSelectedKeys = computed(() => props.selectedKeys || []);
+
 const handleSelect = (keys: string[]) => {
-  if (keys.length > 0) {
-    const key = keys[0];
-    if (!key.includes('/')) {
-      serversStore.selectServer(key);
+  if (props.multiple) {
+    emit('update:selected-keys', keys);
+  } else {
+    if (keys.length > 0) {
+      const key = keys[0];
+      if (!key.includes('/')) {
+        serversStore.selectServer(key);
+      }
     }
+    emit('update:selected-keys', keys);
   }
 };
 </script>
@@ -45,6 +58,8 @@ const handleSelect = (keys: string[]) => {
 <template>
   <n-tree
     :data="treeData"
+    :selected-keys="internalSelectedKeys"
+    :multiple="multiple"
     block-line
     expand-on-click
     @update:selected-keys="handleSelect"
