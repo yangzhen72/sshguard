@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use parking_lot::RwLock;
 use std::net::TcpStream;
 use std::sync::Arc;
+use std::io::{Read, Write};
 
 lazy_static::lazy_static! {
     pub static ref SESSION_MANAGER: RwLock<SessionManager> = RwLock::new(SessionManager::new());
@@ -52,7 +53,7 @@ pub fn connect(host: &str, port: u16, username: &str, password: &str) -> Result<
     let tcp = TcpStream::connect(format!("{}:{}", host, port))
         .map_err(|e| SshError::ConnectionFailed(e.to_string()))?;
     
-    let session = Session::new().map_err(|e| SshError::SshError(e))?;
+    let mut session = Session::new().map_err(|e| SshError::SshError(e))?;
     session.set_tcp_stream(tcp);
     session.handshake().map_err(|e| SshError::SshError(e))?;
     session.userauth_password(username, password)
