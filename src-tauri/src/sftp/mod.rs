@@ -54,7 +54,7 @@ pub fn list_directory(sftp: &Sftp, path: &str) -> Result<Vec<String>> {
     loop {
         match dir.readdir() {
             Ok((filename, _stat)) => {
-                entries.push(filename.to_string());
+                entries.push(filename.to_string_lossy().to_string());
             }
             Err(e) => {
                 if e.code() == ssh2::ErrorCode::SFTP(1) {
