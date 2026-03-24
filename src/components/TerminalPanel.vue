@@ -11,7 +11,7 @@ import 'xterm/css/xterm.css';
 const terminalsStore = useTerminalsStore();
 const sftpStore = useSftpStore();
 const terminalRef = ref<HTMLDivElement | null>(null);
-const terminals = ref<Map<string, { term: Terminal, fitAddon: FitAddon, inputBuffer: string }>>(new Map());
+const terminals = ref<Map<string, { term: Terminal, fitAddon: FitAddon }>>(new Map());
 
 const CD_PATTERN = /^\s*cd\s+(.+)$/;
 
@@ -21,14 +21,32 @@ const initTerminal = (tabId: string) => {
   const term = new Terminal({
     cursorBlink: true,
     fontSize: 14,
-    fontFamily: 'Menlo, Monaco, "Courier New", monospace',
+    fontFamily: 'Consolas, Monaco, "Courier New", monospace',
     theme: {
       background: '#000000',
-      foreground: '#00ff88',
-      cursor: '#00ffff',
-      selectionBackground: 'rgba(0, 255, 255, 0.3)'
+      foreground: '#e0e0e0',
+      cursor: '#0098ff',
+      cursorAccent: '#000000',
+      selectionBackground: 'rgba(0, 152, 255, 0.3)',
+      black: '#000000',
+      red: '#f44336',
+      green: '#4caf50',
+      yellow: '#ff9800',
+      blue: '#2196f3',
+      magenta: '#9c27b0',
+      cyan: '#00bcd4',
+      white: '#e0e0e0',
+      brightBlack: '#666666',
+      brightRed: '#ef5350',
+      brightGreen: '#69f0ae',
+      brightYellow: '#ffe082',
+      brightBlue: '#64b5f6',
+      brightMagenta: '#ba68c8',
+      brightCyan: '#84ffff',
+      brightWhite: '#ffffff',
     },
-    scrollback: 10000
+    scrollback: 10000,
+    allowTransparency: false,
   });
   
   const fitAddon = new FitAddon();
@@ -63,7 +81,7 @@ const initTerminal = (tabId: string) => {
     }
   });
   
-  terminals.value.set(tabId, { term, fitAddon, inputBuffer });
+  terminals.value.set(tabId, { term, fitAddon });
 };
 
 const attachTerminal = (tabId: string) => {
@@ -94,7 +112,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="terminal-panel cyberpunk-terminal scanline">
+  <div class="terminal-panel">
     <div ref="terminalRef" class="terminal-container"></div>
   </div>
 </template>
@@ -105,10 +123,14 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  padding: var(--spacing-sm);
+  background: var(--bg-primary);
 }
 
 .terminal-container {
   flex: 1;
-  padding: 8px;
+  background: var(--terminal-bg);
+  border-radius: var(--radius-md);
+  overflow: hidden;
 }
 </style>

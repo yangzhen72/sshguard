@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import { NInput, NButton, NTag } from 'naive-ui';
 import { useServersStore } from '../stores/servers';
 import { useTerminalsStore } from '../stores/terminals';
+import { invoke } from '@tauri-apps/api/core';
 
 const serversStore = useServersStore();
 const terminalsStore = useTerminalsStore();
@@ -44,9 +44,9 @@ const handleSendBatch = async () => {
     if (tab) {
       const encoder = new TextEncoder();
       const data = encoder.encode(commandInput.value + '\n');
-      await fetch(`send_pty_data`, {
-        method: 'POST',
-        body: JSON.stringify({ sessionId: tab.sessionId, data: Array.from(data) })
+      await invoke('send_pty_data', { 
+        sessionId: tab.sessionId, 
+        data: Array.from(data) 
       });
     }
   }
@@ -55,12 +55,12 @@ const handleSendBatch = async () => {
 </script>
 
 <template>
-  <div class="batch-panel cyberpunk-sidebar">
+  <div class="batch-panel">
     <div class="batch-header">
       <span class="batch-title">📡 批量操作</span>
-      <NTag v-if="selectedForBatch.length > 0" type="info" size="small">
+      <span v-if="selectedForBatch.length > 0" class="batch-count">
         {{ selectedForBatch.length }} 台
-      </NTag>
+      </span>
     </div>
     
     <div class="batch-section">
@@ -73,53 +73,49 @@ const handleSendBatch = async () => {
           :class="{ selected: selectedForBatch.includes(server.id) }"
           @click="handleToggleServer(server.id)"
         >
-          <Checkbox 
-            :checked="selectedForBatch.includes(server.id)" 
-            size="small"
-          />
+          <span class="checkbox" :class="{ checked: selectedForBatch.includes(server.id) }">
+            {{ selectedForBatch.includes(server.id) ? '✓' : '' }}
+          </span>
           <span class="server-name">{{ server.name }}</span>
         </div>
         <div v-if="connectedServers.length === 0" class="empty-tip">
           暂无已连接服务器
         </div>
       </div>
-      <NButton 
+      <button 
         v-if="connectedServers.length > 0" 
-        size="tiny" 
+        class="btn-link"
         @click="handleSelectAll"
-        class="select-all-btn"
       >
         全选
-      </NButton>
+      </button>
     </div>
     
     <div class="batch-section">
-      <div class="section-label">批量连接</div>
-      <NButton 
-        class="cyberpunk-button batch-connect-btn"
+      <button 
+        class="btn"
         :disabled="selectedForBatch.length === 0"
         @click="handleBatchConnect"
       >
         连接 {{ selectedForBatch.length }} 台服务器
-      </NButton>
+      </button>
     </div>
     
     <div class="batch-section">
       <div class="section-label">发送命令</div>
-      <NInput
-        v-model:value="commandInput"
-        type="textarea"
+      <textarea
+        v-model="commandInput"
         placeholder="输入要发送的命令..."
-        :rows="3"
-        class="cyberpunk-input"
-      />
-      <NButton 
-        class="cyberpunk-button send-btn"
+        class="command-input"
+        rows="3"
+      ></textarea>
+      <button 
+        class="btn primary"
         :disabled="selectedForBatch.length === 0 || !commandInput"
         @click="handleSendBatch"
       >
         发送到 {{ selectedForBatch.length }} 台服务器
-      </NButton>
+      </button>
     </div>
   </div>
 </template>
@@ -129,34 +125,44 @@ const handleSendBatch = async () => {
   width: 280px;
   background: var(--bg-secondary);
   border: 1px solid var(--border-default);
-  border-radius: 8px;
-  padding: 12px;
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-md);
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--spacing-md);
+  box-shadow: var(--shadow-lg);
 }
 
 .batch-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-bottom: 8px;
+  padding-bottom: var(--spacing-sm);
   border-bottom: 1px solid var(--border-default);
 }
 
 .batch-title {
-  font-weight: bold;
-  color: var(--neon-cyan);
+  font-weight: 600;
+  color: var(--accent-primary);
+  font-size: 14px;
+}
+
+.batch-count {
+  font-size: 12px;
+  padding: 2px 8px;
+  background: rgba(0, 152, 255, 0.2);
+  color: var(--accent-primary);
+  border-radius: 10px;
 }
 
 .batch-section {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--spacing-sm);
 }
 
 .section-label {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -166,26 +172,42 @@ const handleSendBatch = async () => {
   max-height: 120px;
   overflow-y: auto;
   border: 1px solid var(--border-default);
-  border-radius: 4px;
-  padding: 4px;
+  border-radius: var(--radius-sm);
 }
 
 .server-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 4px 8px;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-xs) var(--spacing-sm);
   cursor: pointer;
-  border-radius: 4px;
-  transition: all 0.2s ease;
+  transition: background 0.15s ease;
 }
 
 .server-item:hover {
-  background: rgba(0, 255, 255, 0.1);
+  background: var(--bg-hover);
 }
 
 .server-item.selected {
-  background: rgba(0, 255, 255, 0.15);
+  background: rgba(0, 152, 255, 0.1);
+}
+
+.checkbox {
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-default);
+  border-radius: 3px;
+  font-size: 10px;
+  color: var(--accent-primary);
+}
+
+.checkbox.checked {
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+  color: #fff;
 }
 
 .server-name {
@@ -195,20 +217,75 @@ const handleSendBatch = async () => {
 
 .empty-tip {
   text-align: center;
-  padding: 12px;
-  color: var(--text-secondary);
+  padding: var(--spacing-md);
+  color: var(--text-muted);
   font-size: 12px;
 }
 
-.select-all-btn {
-  align-self: flex-start;
+.btn-link {
+  background: none;
+  border: none;
+  color: var(--accent-primary);
+  font-size: 12px;
+  cursor: pointer;
+  text-align: left;
+  padding: 0;
 }
 
-.batch-connect-btn {
-  width: 100%;
+.btn-link:hover {
+  text-decoration: underline;
 }
 
-.send-btn {
+.command-input {
   width: 100%;
+  padding: var(--spacing-sm);
+  background: var(--bg-primary);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-family: inherit;
+  resize: none;
+}
+
+.command-input:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+}
+
+.command-input::placeholder {
+  color: var(--text-muted);
+}
+
+.btn {
+  width: 100%;
+  padding: var(--spacing-sm);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.15s ease;
+}
+
+.btn:hover:not(:disabled) {
+  background: var(--bg-hover);
+  border-color: var(--accent-primary);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn.primary {
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+  color: #fff;
+}
+
+.btn.primary:hover:not(:disabled) {
+  background: var(--accent-hover);
 }
 </style>
