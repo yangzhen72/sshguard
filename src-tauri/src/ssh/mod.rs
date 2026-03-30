@@ -1,9 +1,10 @@
+use parking_lot::RwLock;
 use ssh2::Session;
 use std::collections::HashMap;
-use parking_lot::RwLock;
 use std::net::TcpStream;
+use std::path::Path;
 use std::sync::Arc;
-use std::io::{Read, Write};
+use thiserror::Error;
 
 lazy_static::lazy_static! {
     pub static ref SESSION_MANAGER: RwLock<SessionManager> = RwLock::new(SessionManager::new());
@@ -11,29 +12,40 @@ lazy_static::lazy_static! {
 
 pub struct SessionManager {
     sessions: HashMap<String, Arc<Session>>,
+    pty_channels: HashMap<String, ssh2::Channel>,
 }
 
 impl SessionManager {
     pub fn new() -> Self {
         Self {
             sessions: HashMap::new(),
+            pty_channels: HashMap::new(),
         }
     }
-    
+
     pub fn get_session(&self, session_id: &str) -> Option<Arc<Session>> {
         self.sessions.get(session_id).cloned()
     }
-    
+
+    pub fn get_pty_channel(&self, session_id: &str) -> Option<&ssh2::Channel> {
+        self.pty_channels.get(session_id)
+    }
+
     pub fn insert_session(&mut self, session_id: String, session: Arc<Session>) {
         self.sessions.insert(session_id, session);
     }
-    
+
+    pub fn insert_pty_channel(&mut self, session_id: String, channel: ssh2::Channel) {
+        self.pty_channels.insert(session_id, channel);
+    }
+
     pub fn remove_session(&mut self, session_id: &str) -> Option<Arc<Session>> {
+        self.pty_channels.remove(session_id);
         self.sessions.remove(session_id)
     }
 }
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug, Error)]
 pub enum SshError {
     #[error("Connection failed: {0}")]
     ConnectionFailed(String),
@@ -41,6 +53,8 @@ pub enum SshError {
     AuthFailed(String),
     #[error("Session not found: {0}")]
     SessionNotFound(String),
+    #[error("PTY not initialized for session: {0}")]
+    PtyNotInitialized(String),
     #[error("IO error: {0}")]
     IoError(#[from] std::io::Error),
     #[error("SSH error: {0}")]
@@ -49,60 +63,119 @@ pub enum SshError {
 
 pub type Result<T> = std::result::Result<T, SshError>;
 
-pub fn connect(host: &str, port: u16, username: &str, password: &str) -> Result<String> {
+#[derive(Debug, Clone)]
+pub enum AuthMethod {
+    Password(String),
+    KeyFile {
+        path: String,
+        passphrase: Option<String>,
+    },
+    Agent,
+}
+
+pub fn connect(host: &str, port: u16, username: &str, auth_method: AuthMethod) -> Result<String> {
     let tcp = TcpStream::connect(format!("{}:{}", host, port))
         .map_err(|e| SshError::ConnectionFailed(e.to_string()))?;
-    
+
     let mut session = Session::new().map_err(|e| SshError::SshError(e))?;
     session.set_tcp_stream(tcp);
     session.handshake().map_err(|e| SshError::SshError(e))?;
-    session.userauth_password(username, password)
-        .map_err(|e| SshError::AuthFailed(e.to_string()))?;
-    
+
+    match auth_method {
+        AuthMethod::Password(password) => {
+            session
+                .userauth_password(username, &password)
+                .map_err(|e| SshError::AuthFailed(e.to_string()))?;
+        }
+        AuthMethod::KeyFile { path, passphrase } => {
+            session
+                .userauth_pubkey_file(username, None, Path::new(&path), passphrase.as_deref())
+                .map_err(|e| SshError::AuthFailed(e.to_string()))?;
+        }
+        AuthMethod::Agent => {
+            session
+                .userauth_agent(username)
+                .map_err(|e| SshError::AuthFailed(e.to_string()))?;
+        }
+    }
+
+    if !session.authenticated() {
+        return Err(SshError::AuthFailed("Authentication failed".to_string()));
+    }
+
     let session_id = uuid::Uuid::new_v4().to_string();
-    SESSION_MANAGER.write().insert_session(session_id.clone(), Arc::new(session));
-    
+    SESSION_MANAGER
+        .write()
+        .insert_session(session_id.clone(), Arc::new(session));
+
     Ok(session_id)
 }
 
-pub fn create_pty(session_id: &str) -> Result<String> {
-    let manager = SESSION_MANAGER.read();
-    let _session = manager.get_session(session_id)
+pub fn create_pty(session_id: &str, term: &str, cols: u16, rows: u16) -> Result<String> {
+    let mut manager = SESSION_MANAGER.write();
+    let session = manager
+        .get_session(session_id)
         .ok_or_else(|| SshError::SessionNotFound(session_id.to_string()))?;
+
+    let mut channel = session
+        .channel_session()
+        .map_err(|e| SshError::SshError(e))?;
+
+    channel
+        .request_pty(term, None, (cols, rows, 0, 0))
+        .map_err(|e| SshError::SshError(e))?;
+
+    channel.request_shell().map_err(|e| SshError::SshError(e))?;
+
+    manager.insert_pty_channel(session_id.to_string(), channel);
+
     Ok(session_id.to_string())
 }
 
 pub fn disconnect(session_id: &str) -> Result<()> {
-    SESSION_MANAGER.write().remove_session(session_id)
+    SESSION_MANAGER
+        .write()
+        .remove_session(session_id)
         .ok_or_else(|| SshError::SessionNotFound(session_id.to_string()))?;
     Ok(())
 }
 
 pub fn send_pty_data(session_id: &str, data: &[u8]) -> Result<()> {
     let manager = SESSION_MANAGER.read();
-    let session = manager.get_session(session_id)
-        .ok_or_else(|| SshError::SessionNotFound(session_id.to_string()))?;
-    
-    let mut channel = session.channel_session()
-        .map_err(|e| SshError::SshError(e))?;
+    let channel = manager
+        .get_pty_channel(session_id)
+        .ok_or_else(|| SshError::PtyNotInitialized(session_id.to_string()))?;
+
     channel.write(data).map_err(|e| SshError::IoError(e))?;
-    channel.send_eof().map_err(|e| SshError::SshError(e))?;
-    
+    channel.flush().map_err(|e| SshError::IoError(e))?;
+
     Ok(())
 }
 
-pub fn read_pty_data(session_id: &str, _timeout_ms: u32) -> Result<Vec<u8>> {
+pub fn read_pty_data(session_id: &str, timeout_ms: u32) -> Result<Vec<u8>> {
     let manager = SESSION_MANAGER.read();
-    let session = manager.get_session(session_id)
-        .ok_or_else(|| SshError::SessionNotFound(session_id.to_string()))?;
-    
-    let mut channel = session.channel_session()
-        .map_err(|e| SshError::SshError(e))?;
-    channel.exec("").map_err(|e| SshError::SshError(e))?;
-    
+    let channel = manager
+        .get_pty_channel(session_id)
+        .ok_or_else(|| SshError::PtyNotInitialized(session_id.to_string()))?;
+
     let mut buf = vec![0u8; 8192];
-    let n = channel.read(&mut buf).map_err(|e| SshError::IoError(e))?;
-    buf.truncate(n);
-    
+
+    channel.read(&mut buf).map_err(|e| SshError::IoError(e))?;
+
+    buf.retain(|&b| b != 0);
+
     Ok(buf)
+}
+
+pub fn resize_pty(session_id: &str, cols: u16, rows: u16) -> Result<()> {
+    let manager = SESSION_MANAGER.read();
+    let channel = manager
+        .get_pty_channel(session_id)
+        .ok_or_else(|| SshError::PtyNotInitialized(session_id.to_string()))?;
+
+    channel
+        .request_pty_size(cols, rows)
+        .map_err(|e| SshError::SshError(e))?;
+
+    Ok(())
 }

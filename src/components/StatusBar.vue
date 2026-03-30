@@ -2,11 +2,21 @@
 import { computed } from 'vue';
 import { useTerminalsStore } from '../stores/terminals';
 import { useSftpStore } from '../stores/sftp';
+import { useUpdateStore } from '../stores/update';
 
 const terminalsStore = useTerminalsStore();
 const sftpStore = useSftpStore();
+const updateStore = useUpdateStore();
 
 const connectedCount = computed(() => terminalsStore.tabs.length);
+
+const checkUpdate = () => {
+  updateStore.checkForUpdates();
+};
+
+const updateBtnText = () => {
+  return updateStore.isChecking ? '...' : '↻';
+};
 </script>
 
 <template>
@@ -29,7 +39,10 @@ const connectedCount = computed(() => terminalsStore.tabs.length);
     
     <div class="status-right">
       <span class="status-item">UTF-8</span>
-      <span class="status-item">v0.4.0</span>
+      <span class="status-item version">v0.4.0</span>
+      <button class="update-btn" @click="checkUpdate" :disabled="updateStore.isChecking" title="检查更新">
+        {{ updateBtnText() }} 更新
+      </button>
     </div>
   </footer>
 </template>
@@ -92,5 +105,31 @@ const connectedCount = computed(() => terminalsStore.tabs.length);
 
 .synced {
   color: var(--success);
+}
+
+.version {
+  color: var(--text-muted);
+}
+
+.update-btn {
+  background: transparent;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 11px;
+  padding: 2px 6px;
+  transition: all 0.15s ease;
+}
+
+.update-btn:hover:not(:disabled) {
+  background: var(--bg-hover);
+  color: var(--accent-primary);
+  border-color: var(--accent-primary);
+}
+
+.update-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 </style>

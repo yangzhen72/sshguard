@@ -7,7 +7,11 @@ export interface TerminalTab {
   id: string;
   serverId: string;
   title: string;
-  sessionId: number;
+  sessionId: string;
+}
+
+interface ConnectResult {
+  session_id: string;
 }
 
 export const useTerminalsStore = defineStore('terminals', () => {
@@ -17,34 +21,47 @@ export const useTerminalsStore = defineStore('terminals', () => {
   const createTab = async (server: ServerConfig) => {
     const tabId = crypto.randomUUID();
     
-    let password: string | null = null;
-    let keyFile: string | null = null;
+    const authInfo = buildAuthInfo(server);
     
-    if (server.authType === 'password' && server.encryptedPassword) {
-      password = server.encryptedPassword;
-    } else if (server.authType === 'keyfile') {
-      keyFile = server.keyFilePath || null;
-    }
-    
-    const sessionId = await invoke<number>('connect', {
+    const result = await invoke<ConnectResult>('connect', {
       host: server.host,
       port: server.port,
       username: server.username,
-      authType: server.authType,
-      password,
-      keyFile
+      authInfo
     });
     
-    await invoke('create_pty', { sessionId });
+    await invoke<string>('create_pty', {
+      sessionId: result.session_id,
+      term: 'xterm-256color',
+      cols: 80,
+      rows: 24
+    });
     
     tabs.value.push({
       id: tabId,
       serverId: server.id,
       title: server.name,
-      sessionId
+      sessionId: result.session_id
     });
     activeTabId.value = tabId;
     return tabId;
+  };
+
+  const buildAuthInfo = (server: ServerConfig) => {
+    if (server.authType === 'password') {
+      return {
+        authType: 'password',
+        password: server.encryptedPassword || ''
+      };
+    } else if (server.authType === 'keyfile') {
+      return {
+        authType: 'keyfile',
+        keyFilePath: server.keyFilePath || '',
+        passphrase: null
+      };
+    } else {
+      return { authType: 'agent' };
+    }
   };
 
   const closeTab = (id: string) => {
