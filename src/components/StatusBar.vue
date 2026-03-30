@@ -39,7 +39,7 @@ const updateBtnText = () => {
     
     <div class="status-right">
       <span class="status-item">UTF-8</span>
-      <span class="status-item version">v0.4.0</span>
+      <span class="status-item version">v0.5.0</span>
       <button class="update-btn" @click="checkUpdate" :disabled="updateStore.isChecking" title="检查更新">
         {{ updateBtnText() }} 更新
       </button>
