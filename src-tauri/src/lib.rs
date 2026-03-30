@@ -34,6 +34,7 @@ pub fn run() {
             commands::update::download_and_install,
             commands::ai::chat,
             commands::ai::set_config,
+            commands::ai::query_server_status,
         ])
         .setup(|_app| {
             log::info!("Application setup complete");

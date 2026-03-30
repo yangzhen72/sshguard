@@ -83,3 +83,27 @@ pub async fn chat_streaming(message: String) -> Result<Vec<String>, String> {
         }
     }
 }
+
+#[command]
+pub async fn query_server_status(session_id: String) -> Result<String, String> {
+    let commands = vec![
+        "echo '=== CPU ===' && top -bn1 | head -5",
+        "echo '=== Memory ===' && free -h",
+        "echo '=== Disk ===' && df -h",
+        "echo '=== Uptime ===' && uptime",
+    ];
+    
+    let mut results = Vec::new();
+    for cmd in commands {
+        if let Err(e) = crate::ssh::send_pty_data(&session_id, format!("{}\n", cmd).as_bytes()) {
+            results.push(format!("Error: {}", e));
+            continue;
+        }
+        tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+        if let Ok(output) = crate::ssh::read_pty_data(&session_id, 1000) {
+            results.push(String::from_utf8_lossy(&output).to_string());
+        }
+    }
+    
+    Ok(results.join("\n"))
+}
