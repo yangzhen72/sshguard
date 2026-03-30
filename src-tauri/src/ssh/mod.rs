@@ -184,7 +184,7 @@ pub fn resize_pty(session_id: &str, cols: u16, rows: u16) -> Result<()> {
         .ok_or_else(|| SshError::PtyNotInitialized(session_id.to_string()))?;
 
     channel
-        .request_pty_size(Some(cols as u32), Some(rows as u32), None, None)
+        .request_pty_size(cols as u32, rows as u32, None, None)
         .map_err(|e| SshError::SshError(e))?;
 
     Ok(())
