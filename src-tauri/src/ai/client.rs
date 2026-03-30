@@ -1,6 +1,17 @@
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
+use std::sync::RwLock;
+use once_cell::sync::Lazy;
 use thiserror::Error;
+
+pub static AI_CONFIG: Lazy<RwLock<AIConfig>> = Lazy::new(|| RwLock::new(AIConfig::default()));
+
+#[derive(Debug, Clone, Default)]
+pub struct AIConfig {
+    pub provider: String,
+    pub api_key: String,
+    pub model: String,
+}
 
 #[derive(Debug, Error)]
 pub enum AIError {

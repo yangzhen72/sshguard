@@ -32,6 +32,8 @@ pub fn run() {
             commands::sftp::upload_file,
             commands::update::check_for_updates,
             commands::update::download_and_install,
+            commands::ai::chat,
+            commands::ai::set_config,
         ])
         .setup(|_app| {
             log::info!("Application setup complete");
