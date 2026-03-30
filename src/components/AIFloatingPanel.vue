@@ -33,7 +33,6 @@ const handleSend = async (message: string) => {
   right: 0;
   top: 0;
   bottom: 0;
-  width: 400px;
   background: var(--bg-secondary);
   border-left: 1px solid var(--border-default);
   display: flex;
