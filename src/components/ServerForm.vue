@@ -42,38 +42,31 @@ const handleTestConnection = async () => {
   testResult.value = null;
 
   try {
-    let sessionId: number;
+    let authInfo: any;
     
     if (formData.value.authType === 'password') {
-      sessionId = await invoke<number>('connect', {
-        host: formData.value.host,
-        port: formData.value.port,
-        username: formData.value.username,
-        authType: formData.value.authType,
-        password: formData.value.password,
-        keyFile: null
-      });
+      authInfo = {
+        authType: 'password',
+        password: formData.value.password
+      };
     } else if (formData.value.authType === 'keyfile') {
-      sessionId = await invoke<number>('connect', {
-        host: formData.value.host,
-        port: formData.value.port,
-        username: formData.value.username,
-        authType: formData.value.authType,
-        password: null,
-        keyFile: formData.value.keyFilePath
-      });
+      authInfo = {
+        authType: 'keyfile',
+        keyFilePath: formData.value.keyFilePath,
+        passphrase: null
+      };
     } else {
-      sessionId = await invoke<number>('connect', {
-        host: formData.value.host,
-        port: formData.value.port,
-        username: formData.value.username,
-        authType: formData.value.authType,
-        password: null,
-        keyFile: null
-      });
+      authInfo = { authType: 'agent' };
     }
 
-    await invoke('disconnect', { sessionId });
+    const result = await invoke<{ session_id: string }>('connect', {
+      host: formData.value.host,
+      port: formData.value.port,
+      username: formData.value.username,
+      authInfo
+    });
+
+    await invoke('disconnect', { sessionId: result.session_id });
     testResult.value = { success: true, message: '连接成功！' };
   } catch (e: any) {
     testResult.value = { 
