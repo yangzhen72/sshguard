@@ -4,6 +4,14 @@ import type { AIMessage } from '../types/ai';
 defineProps<{
   messages: AIMessage[];
 }>();
+
+const emit = defineEmits<{
+  (e: 'copy', content: string): void;
+}>();
+
+const copyMessage = (content: string) => {
+  emit('copy', content);
+};
 </script>
 
 <template>
@@ -15,6 +23,7 @@ defineProps<{
       :class="msg.role"
     >
       <div class="message-content">{{ msg.content }}</div>
+      <button class="copy-btn" @click="copyMessage(msg.content)" title="复制">📋</button>
     </div>
   </div>
 </template>
@@ -43,5 +52,22 @@ defineProps<{
 .message-content {
   white-space: pre-wrap;
   word-break: break-word;
+}
+.message {
+  position: relative;
+}
+.copy-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: rgba(0,0,0,0.3);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.message:hover .copy-btn {
+  opacity: 1;
 }
 </style>
