@@ -5,4 +5,4 @@ pub mod qwen;
 pub mod minimax;
 pub mod deepseek;
 
-pub use client::{AIClient, AIError, ChatCompletionRequest, Message};
+pub use client::{AIClient, AIError, ChatCompletionRequest, Message, Result, AI_CONFIG};

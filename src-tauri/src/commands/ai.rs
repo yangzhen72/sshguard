@@ -1,6 +1,11 @@
 use serde::{Deserialize, Serialize};
 use tauri::command;
-use crate::ai::{self, AnthropicClient, OpenAIClient, QwenClient, MiniMaxClient, DeepSeekClient, AIClient, ChatCompletionRequest, Message, AI_CONFIG};
+use crate::ai::{self, AIClient, ChatCompletionRequest, Message, AI_CONFIG};
+use crate::ai::anthropic::AnthropicClient;
+use crate::ai::openai::OpenAIClient;
+use crate::ai::qwen::QwenClient;
+use crate::ai::minimax::MiniMaxClient;
+use crate::ai::deepseek::DeepSeekClient;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct AIConfig {
@@ -27,7 +32,7 @@ pub async fn set_config(config: AIConfig) -> Result<(), String> {
     }
     
     {
-        let mut cfg = AI_CONFIG.write().map_err(|e| e.to_string())?;
+        let mut cfg = AI_CONFIG.write().map_err(|e: std::sync::PoisonError<_>| e.to_string())?;
         *cfg = config;
     }
     
@@ -37,7 +42,7 @@ pub async fn set_config(config: AIConfig) -> Result<(), String> {
 #[command]
 pub async fn chat(message: String) -> Result<String, String> {
     let config = {
-        let cfg = AI_CONFIG.read().map_err(|e| e.to_string())?;
+        let cfg = AI_CONFIG.read().map_err(|e: std::sync::PoisonError<_>| e.to_string())?;
         cfg.clone()
     };
     
@@ -62,7 +67,7 @@ pub async fn chat(message: String) -> Result<String, String> {
 #[command]
 pub async fn chat_streaming(message: String) -> Result<Vec<String>, String> {
     let config = {
-        let cfg = AI_CONFIG.read().map_err(|e| e.to_string())?;
+        let cfg = AI_CONFIG.read().map_err(|e: std::sync::PoisonError<_>| e.to_string())?;
         cfg.clone()
     };
     
