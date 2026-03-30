@@ -32,6 +32,10 @@ impl SessionManager {
         self.pty_channels.get(session_id)
     }
 
+    pub fn get_pty_channel_mut(&mut self, session_id: &str) -> Option<&mut ssh2::Channel> {
+        self.pty_channels.get_mut(session_id)
+    }
+
     pub fn insert_session(&mut self, session_id: String, session: Arc<Session>) {
         self.sessions.insert(session_id, session);
     }
@@ -144,7 +148,7 @@ pub fn disconnect(session_id: &str) -> Result<()> {
 pub fn send_pty_data(session_id: &str, data: &[u8]) -> Result<()> {
     let mut manager = SESSION_MANAGER.write();
     let channel = manager
-        .get_pty_channel(session_id)
+        .get_pty_channel_mut(session_id)
         .ok_or_else(|| SshError::PtyNotInitialized(session_id.to_string()))?;
 
     channel.write(data).map_err(|e| SshError::IoError(e))?;
@@ -156,7 +160,7 @@ pub fn send_pty_data(session_id: &str, data: &[u8]) -> Result<()> {
 pub fn read_pty_data(session_id: &str, _timeout_ms: u32) -> Result<Vec<u8>> {
     let mut manager = SESSION_MANAGER.write();
     let channel = manager
-        .get_pty_channel(session_id)
+        .get_pty_channel_mut(session_id)
         .ok_or_else(|| SshError::PtyNotInitialized(session_id.to_string()))?;
 
     let mut buf = vec![0u8; 8192];
@@ -180,7 +184,7 @@ pub fn read_pty_data(session_id: &str, _timeout_ms: u32) -> Result<Vec<u8>> {
 pub fn resize_pty(session_id: &str, cols: u16, rows: u16) -> Result<()> {
     let mut manager = SESSION_MANAGER.write();
     let channel = manager
-        .get_pty_channel(session_id)
+        .get_pty_channel_mut(session_id)
         .ok_or_else(|| SshError::PtyNotInitialized(session_id.to_string()))?;
 
     channel
