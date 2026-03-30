@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use tauri::command;
-use crate::ai::{self, AnthropicClient, AIClient, ChatCompletionRequest, Message, AI_CONFIG};
+use crate::ai::{self, AnthropicClient, OpenAIClient, QwenClient, MiniMaxClient, DeepSeekClient, AIClient, ChatCompletionRequest, Message, AI_CONFIG};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct AIConfig {
@@ -15,6 +15,10 @@ static mut AI_GLOBAL_CLIENT: Option<Box<dyn AIClient + Send + Sync>> = None;
 pub async fn set_config(config: AIConfig) -> Result<(), String> {
     let client: Box<dyn AIClient + Send + Sync> = match config.provider.as_str() {
         "anthropic" => Box::new(AnthropicClient::new(config.api_key.clone())),
+        "openai" => Box::new(OpenAIClient::new(config.api_key.clone())),
+        "qwen" => Box::new(QwenClient::new(config.api_key.clone())),
+        "minimax" => Box::new(MiniMaxClient::new(config.api_key.clone())),
+        "deepseek" => Box::new(DeepSeekClient::new(config.api_key.clone())),
         _ => return Err("Unsupported provider".to_string()),
     };
     
