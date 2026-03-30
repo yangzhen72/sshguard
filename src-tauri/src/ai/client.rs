@@ -6,7 +6,7 @@ use thiserror::Error;
 
 pub static AI_CONFIG: Lazy<RwLock<AIConfig>> = Lazy::new(|| RwLock::new(AIConfig::default()));
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct AIConfig {
     pub provider: String,
     pub api_key: String,
