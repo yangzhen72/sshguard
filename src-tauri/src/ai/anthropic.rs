@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use futures_util::StreamExt;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
-use super::{AIClient, AIError, ChatCompletionRequest, Message, Result, AI_CONFIG};
+use super::{AIClient, AIError, ChatCompletionRequest, Result};
 
 pub struct AnthropicClient {
     api_key: String,

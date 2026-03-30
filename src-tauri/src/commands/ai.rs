@@ -1,17 +1,35 @@
 use serde::{Deserialize, Serialize};
 use tauri::command;
-use crate::ai::{self, AIClient, ChatCompletionRequest, Message, AI_CONFIG};
+use crate::ai::{AIClient, ChatCompletionRequest, Message, AI_CONFIG, AIConfig};
 use crate::ai::anthropic::AnthropicClient;
 use crate::ai::openai::OpenAIClient;
 use crate::ai::qwen::QwenClient;
 use crate::ai::minimax::MiniMaxClient;
 use crate::ai::deepseek::DeepSeekClient;
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct AIConfig {
-    pub provider: String,
-    pub api_key: String,
-    pub model: String,
+static mut AI_GLOBAL_CLIENT: Option<Box<dyn AIClient + Send + Sync>> = None;
+
+#[command]
+pub async fn set_config(config: AIConfig) -> Result<(), String> {
+    let client: Box<dyn AIClient + Send + Sync> = match config.provider.as_str() {
+        "anthropic" => Box::new(AnthropicClient::new(config.api_key.clone())),
+        "openai" => Box::new(OpenAIClient::new(config.api_key.clone())),
+        "qwen" => Box::new(QwenClient::new(config.api_key.clone())),
+        "minimax" => Box::new(MiniMaxClient::new(config.api_key.clone())),
+        "deepseek" => Box::new(DeepSeekClient::new(config.api_key.clone())),
+        _ => return Err("Unsupported provider".to_string()),
+    };
+    
+    unsafe {
+        AI_GLOBAL_CLIENT = Some(client);
+    }
+    
+    {
+        let mut cfg = AI_CONFIG.write().map_err(|e: std::sync::PoisonError<_>| e.to_string())?;
+        *cfg = config;
+    }
+    
+    Ok(())
 }
 
 static mut AI_GLOBAL_CLIENT: Option<Box<dyn AIClient + Send + Sync>> = None;
