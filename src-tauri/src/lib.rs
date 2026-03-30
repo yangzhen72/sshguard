@@ -32,7 +32,7 @@ pub fn run() {
             commands::update::check_for_updates,
             commands::update::download_and_install,
         ])
-        .setup(|app| {
+        .setup(|_app| {
             log::info!("Application setup complete");
             Ok(())
         })

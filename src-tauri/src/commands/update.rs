@@ -2,7 +2,6 @@ use serde::{Deserialize, Serialize};
 use semver::Version;
 use std::env;
 use std::fs;
-use std::path::PathBuf;
 use std::process::Command;
 
 #[derive(Debug, Deserialize)]
@@ -96,7 +95,7 @@ pub async fn download_and_install(url: String) -> Result<String, String> {
         return Err(format!("Download failed: {}", response.status()));
     }
     
-    let total_bytes = response.content_length().unwrap_or(0);
+    let _total_bytes = response.content_length().unwrap_or(0);
     let bytes_downloaded = response.bytes().await.map_err(|e| e.to_string())?;
     
     fs::write(&installer_path, &bytes_downloaded).map_err(|e| e.to_string())?;

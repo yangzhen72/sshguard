@@ -1,6 +1,7 @@
 use parking_lot::RwLock;
 use ssh2::Session;
 use std::collections::HashMap;
+use std::io::{Read, Write};
 use std::net::TcpStream;
 use std::path::Path;
 use std::sync::Arc;
@@ -122,10 +123,10 @@ pub fn create_pty(session_id: &str, term: &str, cols: u16, rows: u16) -> Result<
         .map_err(|e| SshError::SshError(e))?;
 
     channel
-        .request_pty(term, None, (cols, rows, 0, 0))
+        .request_pty(term, None, Some((cols as u32, rows as u32, 0, 0)))
         .map_err(|e| SshError::SshError(e))?;
 
-    channel.request_shell().map_err(|e| SshError::SshError(e))?;
+    channel.exec("bash").map_err(|e| SshError::SshError(e))?;
 
     manager.insert_pty_channel(session_id.to_string(), channel);
 
@@ -141,7 +142,7 @@ pub fn disconnect(session_id: &str) -> Result<()> {
 }
 
 pub fn send_pty_data(session_id: &str, data: &[u8]) -> Result<()> {
-    let manager = SESSION_MANAGER.read();
+    let mut manager = SESSION_MANAGER.write();
     let channel = manager
         .get_pty_channel(session_id)
         .ok_or_else(|| SshError::PtyNotInitialized(session_id.to_string()))?;
@@ -152,29 +153,38 @@ pub fn send_pty_data(session_id: &str, data: &[u8]) -> Result<()> {
     Ok(())
 }
 
-pub fn read_pty_data(session_id: &str, timeout_ms: u32) -> Result<Vec<u8>> {
-    let manager = SESSION_MANAGER.read();
+pub fn read_pty_data(session_id: &str, _timeout_ms: u32) -> Result<Vec<u8>> {
+    let mut manager = SESSION_MANAGER.write();
     let channel = manager
         .get_pty_channel(session_id)
         .ok_or_else(|| SshError::PtyNotInitialized(session_id.to_string()))?;
 
     let mut buf = vec![0u8; 8192];
 
-    channel.read(&mut buf).map_err(|e| SshError::IoError(e))?;
+    match channel.read(&mut buf) {
+        Ok(n) => {
+            buf.truncate(n);
+        }
+        Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => {
+            buf.clear();
+        }
+        Err(e) => {
+            return Err(SshError::IoError(e));
+        }
+    }
 
     buf.retain(|&b| b != 0);
-
     Ok(buf)
 }
 
 pub fn resize_pty(session_id: &str, cols: u16, rows: u16) -> Result<()> {
-    let manager = SESSION_MANAGER.read();
+    let mut manager = SESSION_MANAGER.write();
     let channel = manager
         .get_pty_channel(session_id)
         .ok_or_else(|| SshError::PtyNotInitialized(session_id.to_string()))?;
 
     channel
-        .request_pty_size(cols, rows)
+        .request_pty_size(Some(cols as u32), Some(rows as u32), None, None)
         .map_err(|e| SshError::SshError(e))?;
 
     Ok(())

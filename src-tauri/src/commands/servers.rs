@@ -23,6 +23,6 @@ pub fn update_server(server: Server) -> Result<Server, String> {
 }
 
 #[command]
-pub fn delete_server(id: String) -> Result<(), String> {
+pub fn delete_server(_id: String) -> Result<(), String> {
     Ok(())
 }
