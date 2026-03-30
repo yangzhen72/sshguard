@@ -96,6 +96,7 @@ export interface AIState {
 // src/stores/ai.ts
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
+import { invoke } from '@tauri-apps/api/core';
 import type { AIMessage, AIConfig, AIProvider } from '../types/ai';
 
 export const useAIStore = defineStore('ai', () => {
@@ -104,6 +105,8 @@ export const useAIStore = defineStore('ai', () => {
   const messages = ref<AIMessage[]>([]);
   const isLoading = ref(false);
   const style = ref<'chatgpt' | 'terminal' | 'split'>('chatgpt');
+  const panelWidth = ref(400);
+  const panelPosition = ref({ right: 0, top: 0 });
 
   const toggle = () => { isOpen.value = !isOpen.value; };
   const open = () => { isOpen.value = true; };
@@ -111,13 +114,50 @@ export const useAIStore = defineStore('ai', () => {
   
   const setConfig = (newConfig: AIConfig) => { config.value = newConfig; };
   const setStyle = (newStyle: typeof style.value) => { style.value = newStyle; };
+  const setPanelWidth = (width: number) => { 
+    panelWidth.value = Math.max(300, Math.min(600, width));
+  };
+  const setPanelPosition = (pos: { right: number; top: number }) => {
+    panelPosition.value = pos;
+  };
   
   const addMessage = (message: AIMessage) => { messages.value.push(message); };
   const clearMessages = () => { messages.value = []; };
+  
+  const loadMessages = () => {
+    const stored = localStorage.getItem('ai_messages');
+    if (stored) messages.value = JSON.parse(stored);
+  };
+  
+  const saveMessages = () => {
+    localStorage.setItem('ai_messages', JSON.stringify(messages.value));
+  };
+
+  const sendMessage = async (content: string) => {
+    if (!config.value) throw new Error('AI not configured');
+    
+    addMessage({ id: crypto.randomUUID(), role: 'user', content, timestamp: Date.now() });
+    saveMessages();
+    isLoading.value = true;
+    
+    try {
+      const response = await invoke<string>('chat', { message: content });
+      addMessage({ id: crypto.randomUUID(), role: 'assistant', content: response, timestamp: Date.now() });
+      saveMessages();
+    } catch (e: any) {
+      addMessage({ id: crypto.randomUUID(), role: 'assistant', content: `错误: ${e}`, timestamp: Date.now() });
+      saveMessages();
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
+  loadMessages();
 
   return {
-    isOpen, config, messages, isLoading, style,
-    toggle, open, close, setConfig, setStyle, addMessage, clearMessages
+    isOpen, config, messages, isLoading, style, panelWidth, panelPosition,
+    toggle, open, close, setConfig, setStyle, setPanelWidth, setPanelPosition,
+    addMessage, clearMessages, sendMessage, loadMessages, saveMessages
   };
 });
 ```
@@ -283,6 +323,24 @@ const handleSend = async (message: string) => {
 const copyMessage = (content: string) => {
   navigator.clipboard.writeText(content);
 };
+
+const startResize = (e: MouseEvent) => {
+  const startX = e.clientX;
+  const startWidth = aiStore.panelWidth;
+  
+  const onMouseMove = (ev: MouseEvent) => {
+    const delta = startX - ev.clientX;
+    aiStore.setPanelWidth(startWidth + delta);
+  };
+  
+  const onMouseUp = () => {
+    document.removeEventListener('mousemove', onMouseMove);
+    document.removeEventListener('mouseup', onMouseUp);
+  };
+  
+  document.addEventListener('mousemove', onMouseMove);
+  document.addEventListener('mouseup', onMouseUp);
+};
 </script>
 
 <template>
@@ -325,30 +383,6 @@ const copyMessage = (content: string) => {
     <div class="resize-handle" @mousedown="startResize"></div>
   </div>
 </template>
-
-<script lang="ts">
-export default {
-  methods: {
-    startResize(e: MouseEvent) {
-      const startX = e.clientX;
-      const startWidth = this.aiStore.panelWidth;
-      
-      const onMouseMove = (e: MouseEvent) => {
-        const delta = startX - e.clientX;
-        this.aiStore.setPanelWidth(startWidth + delta);
-      };
-      
-      const onMouseUp = () => {
-        document.removeEventListener('mousemove', onMouseMove);
-        document.removeEventListener('mouseup', onMouseUp);
-      };
-      
-      document.addEventListener('mousemove', onMouseMove);
-      document.addEventListener('mouseup', onMouseUp);
-    }
-  }
-};
-</script>
 
 <style scoped>
 .floating-panel {
