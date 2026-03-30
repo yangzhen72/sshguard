@@ -1,10 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { invoke } from '@tauri-apps/api/core';
-import type { AIMessage, AIConfig, AIProvider } from '../types/ai';
-
-const MESSAGES_KEY = 'ai_messages';
-const POSITION_KEY = 'ai_panel_position';
+import type { AIMessage, AIConfig } from '../types/ai';
 
 export const useAIStore = defineStore('ai', () => {
   const isOpen = ref(false);
@@ -26,6 +23,7 @@ export const useAIStore = defineStore('ai', () => {
   };
   const setPanelPosition = (pos: { right: number; top: number }) => {
     panelPosition.value = pos;
+    savePosition();
   };
   
   const addMessage = (message: AIMessage) => { messages.value.push(message); };
@@ -33,11 +31,33 @@ export const useAIStore = defineStore('ai', () => {
   
   const loadMessages = () => {
     const stored = localStorage.getItem('ai_messages');
-    if (stored) messages.value = JSON.parse(stored);
+    if (stored) {
+      try {
+        messages.value = JSON.parse(stored);
+      } catch {
+        messages.value = [];
+      }
+    }
   };
   
   const saveMessages = () => {
     localStorage.setItem('ai_messages', JSON.stringify(messages.value));
+  };
+
+  const loadPosition = () => {
+    const stored = localStorage.getItem('ai_panel_position');
+    if (stored) {
+      try {
+        const pos = JSON.parse(stored);
+        panelPosition.value = pos;
+      } catch {
+        panelPosition.value = { right: 0, top: 0 };
+      }
+    }
+  };
+
+  const savePosition = () => {
+    localStorage.setItem('ai_panel_position', JSON.stringify(panelPosition.value));
   };
 
   const sendMessage = async (content: string) => {
@@ -52,7 +72,7 @@ export const useAIStore = defineStore('ai', () => {
       addMessage({ id: crypto.randomUUID(), role: 'assistant', content: response, timestamp: Date.now() });
       saveMessages();
     } catch (e: any) {
-      addMessage({ id: crypto.randomUUID(), role: 'assistant', content: `错误: ${e}`, timestamp: Date.now() });
+      addMessage({ id: crypto.randomUUID(), role: 'assistant', content: `Error: ${e}`, timestamp: Date.now() });
       saveMessages();
     } finally {
       isLoading.value = false;
@@ -60,10 +80,12 @@ export const useAIStore = defineStore('ai', () => {
   };
 
   loadMessages();
+  loadPosition();
 
   return {
     isOpen, config, messages, isLoading, style, panelWidth, panelPosition,
     toggle, open, close, setConfig, setStyle, setPanelWidth, setPanelPosition,
-    addMessage, clearMessages, sendMessage, loadMessages, saveMessages
+    addMessage, clearMessages, sendMessage, loadMessages, saveMessages,
+    loadPosition, savePosition
   };
 });

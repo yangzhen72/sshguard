@@ -15,11 +15,3 @@ export interface AIConfig {
   model: string;
   baseUrl?: string;
 }
-
-export interface AIState {
-  isOpen: boolean;
-  config: AIConfig | null;
-  messages: AIMessage[];
-  isLoading: boolean;
-  style: 'chatgpt' | 'terminal' | 'split';
-}
