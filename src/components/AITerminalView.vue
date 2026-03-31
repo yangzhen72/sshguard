@@ -1,15 +1,13 @@
 <script setup lang="ts">
-import type { AIMessage } from '../types/ai';
+import { useAIStore } from '../stores/ai';
 
-defineProps<{
-  messages: AIMessage[];
-}>();
+const aiStore = useAIStore();
 </script>
 
 <template>
   <div class="terminal-view">
     <div class="terminal-output">
-      <div v-for="msg in messages" :key="msg.id" class="terminal-line">
+      <div v-for="msg in aiStore.messages" :key="msg.id" class="terminal-line">
         <span class="prompt" v-if="msg.role === 'user'">$ </span>
         <span class="response-indicator" v-else>> </span>
         <span class="content">{{ msg.content }}</span>

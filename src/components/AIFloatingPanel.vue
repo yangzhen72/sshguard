@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useAIStore } from '../stores/ai';
-import AIMessageList from './AIMessageList.vue';
-import AIInput from './AIInput.vue';
+import AIChatView from './AIChatView.vue';
+import AITerminalView from './AITerminalView.vue';
+import AISplitView from './AISplitView.vue';
 
 const aiStore = useAIStore();
 
@@ -22,8 +23,9 @@ const handleSend = async (message: string) => {
       <span>🤖 AI 助手</span>
       <button @click="aiStore.close">×</button>
     </div>
-    <AIMessageList :messages="aiStore.messages" />
-    <AIInput @send="handleSend" />
+    <AIChatView v-if="aiStore.style === 'chatgpt'" />
+    <AITerminalView v-else-if="aiStore.style === 'terminal'" />
+    <AISplitView v-else-if="aiStore.style === 'split'" @send="handleSend" />
   </div>
 </template>
 
