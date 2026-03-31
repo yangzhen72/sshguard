@@ -1,12 +1,22 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useTerminalsStore } from '../stores/terminals';
 import { useSftpStore } from '../stores/sftp';
 import { useUpdateStore } from '../stores/update';
+import { getVersion } from '@tauri-apps/api/app';
 
 const terminalsStore = useTerminalsStore();
 const sftpStore = useSftpStore();
 const updateStore = useUpdateStore();
+const appVersion = ref('0.0.0');
+
+onMounted(async () => {
+  try {
+    appVersion.value = await getVersion();
+  } catch (e) {
+    console.error('Failed to get version:', e);
+  }
+});
 
 const connectedCount = computed(() => terminalsStore.tabs.length);
 
@@ -39,7 +49,7 @@ const updateBtnText = () => {
     
     <div class="status-right">
       <span class="status-item">UTF-8</span>
-      <span class="status-item version">v0.5.0</span>
+      <span class="status-item version">v{{ appVersion }}</span>
       <button class="update-btn" @click="checkUpdate" :disabled="updateStore.isChecking" title="检查更新">
         {{ updateBtnText() }} 更新
       </button>
